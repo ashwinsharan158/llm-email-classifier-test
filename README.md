@@ -124,6 +124,8 @@ prompt = f"""
 - Relied on a straightforward interpretation of the email's sender, subject, and body.
 
 **Result:**
+
+![Project Diagram](images/img_1.png)
 - **Issue:** The partnership opportunity email was misclassified as "inquiry".
 - **Analysis:** The prompt lacked explicit instructions for handling ambiguous cases such as business proposals, leading to incorrect classification.
 
@@ -132,12 +134,35 @@ prompt = f"""
 **Objective:**  
 Enhance classification accuracy by adding structured guidance and explicit criteria for each category.
 
+**Prompt:**
+```
+prompt = f"""
+You are an expert email classifier. Analyze the email details below and assign it to one of the following categories: complaint, inquiry, feedback, support_request, or other.
+
+Guidelines:
+1. Use "complaint" if the email expresses dissatisfaction, frustration, or reports a problem with a product/service.
+2. Use "inquiry" if the email contains questions or requests for further information about a product or service.
+3. Use "feedback" if the email offers praise, suggestions, or constructive criticism.
+4. Use "support_request" if the email describes technical issues or requests help (e.g., error messages, installation problems).
+5. Use "other" if the email does not clearly match any of the above categories or shows no clear intent.
+
+Email Details:
+From: {from_s}
+Subject: {subject}
+Body: {body}
+
+Respond with only one of the category names.
+"""
+```
+
 **Characteristics:**
 - Clearly defined each category with specific rules.
 - Continued focusing on the email’s sender, subject, and body.
 - Directed the model to output one of the predefined category names.
 
 **Result:**
+
+![Project Diagram](images/img_2.png)
 - **Outcome:** Despite the improvements, the business proposal email was still labeled as "inquiry".
 - **Analysis:** The prompt did not sufficiently clarify the distinction between genuine product/service inquiries and emails that involve business proposals, which should be categorized as "other".
 
@@ -146,12 +171,35 @@ Enhance classification accuracy by adding structured guidance and explicit crite
 **Objective:**  
 Refine the prompt further to explicitly distinguish between "inquiry" and "other" emails, particularly for business-related communications.
 
+**Prompt:**
+```
+prompt = f"""
+You are an expert email classifier. Analyze the email details below and assign it to one of the following categories: complaint, inquiry, feedback, support_request, or other.
+
+Guidelines:
+1. "complaint": Use if the email expresses dissatisfaction, frustration, or reports a problem with a product or service.
+2. "inquiry": Use if the email asks for information or clarification regarding a product, service, or technical issue (e.g., asking about compatibility, features, or troubleshooting).
+3. "feedback": Use if the email offers praise, suggestions, or constructive criticism.
+4. "support_request": Use if the email describes technical issues or requests assistance with a product or service (e.g., error messages, installation problems).
+5. "other": Use if the email does not clearly match any of the above categories, including emails that involve business proposals, partnership opportunities, or any communication that does not have a clear intent for product/service inquiry.
+
+Email Details:
+From: {from_s}
+Subject: {subject}
+Body: {body}
+
+Respond with only one of the category names.
+"""
+```
+
 **Characteristics:**
 - Included detailed guidelines for each category.
 - Explicitly stated that emails involving business proposals or partnership opportunities should be classified as "other".
 - Maintained clarity by instructing the classifier to output only one valid category name.
 
 **Result:**
+
+![Project Diagram](images/img_3.png)
 - **Outcome:** The business proposal email (ID "005") was correctly classified as "other".
 - **Analysis:** The additional instructions regarding the nature of inquiries versus other communications successfully eliminated the misclassification issue.
 
