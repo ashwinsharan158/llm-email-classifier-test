@@ -1,7 +1,7 @@
 # LLM Integration Exercise: Email Classification and Automation
 
 ## Overview
-In this exercise, you'll build a system that uses Large Language Models (LLMs) to classify incoming emails and automate responses based on the classification. This tests your ability to:
+In this exercise, I build a system that uses Large Language Models (LLMs) to classify incoming emails and automate responses based on the classification. This tested my ability to:
 - Integrate LLMs into a Python workflow
 - Design and refine prompts for reliable classification
 - Implement error handling and reliability measures
@@ -33,29 +33,6 @@ python-dotenv>=1.0.0
 ```
 OPENAI_API_KEY=your_api_key_here
 ```
-
-## Exercise Structure
-The exercise is divided into four main parts:
-
-### Part 1: Email Data Processing (10 minutes)
-- Load and validate the provided mock email data
-- Create functions to extract email data
-- Implement basic data validation
-
-### Part 2: LLM Integration (20 minutes)
-- Design classification prompts
-- Implement API calls
-- Create classification system
-
-### Part 3: Prompt Engineering (20 minutes)
-- Analyze classification accuracy
-- Identify and handle edge cases
-- Document prompt iterations and improvements
-
-### Part 4: Response Automation (10 minutes)
-- Create response generation system
-- Implement category-specific handling
-- Add appropriate error handling and logging
 
 ## Documentation of Approach and Design Decisions
 
@@ -125,7 +102,7 @@ prompt = f"""
 
 **Result:**
 
-![Project Diagram](images/img_1.png)
+![Project Diagram](images/img_1.PNG)
 - **Issue:** The partnership opportunity email was misclassified as "inquiry".
 - **Analysis:** The prompt lacked explicit instructions for handling ambiguous cases such as business proposals, leading to incorrect classification.
 
@@ -162,7 +139,7 @@ Respond with only one of the category names.
 
 **Result:**
 
-![Project Diagram](images/img_2.png)
+![Project Diagram](images/img_2.PNG)
 - **Outcome:** Despite the improvements, the business proposal email was still labeled as "inquiry".
 - **Analysis:** The prompt did not sufficiently clarify the distinction between genuine product/service inquiries and emails that involve business proposals, which should be categorized as "other".
 
@@ -199,7 +176,7 @@ Respond with only one of the category names.
 
 **Result:**
 
-![Project Diagram](images/img_3.png)
+![Project Diagram](images/img_3.PNG)
 - **Outcome:** The business proposal email (ID "005") was correctly classified as "other".
 - **Analysis:** The additional instructions regarding the nature of inquiries versus other communications successfully eliminated the misclassification issue.
 
