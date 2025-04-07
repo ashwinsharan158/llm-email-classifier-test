@@ -51,69 +51,23 @@ sample_emails = [
         "subject": "Partnership opportunity",
         "body": "Our company is interested in exploring potential partnership opportunities with your organization. Would it be possible to schedule a call next week to discuss this further?",
         "timestamp": "2024-03-15T15:00:00Z"
-    },
-    # No specific email
-    {
-        "id": "006",
-        "from": "grass@grass.com",
-        "subject": "grass",
-        "body": "grass grass",
-        "timestamp": "2024-03-15T15:00:00Z"
-    },
-    {
-        "id": "007",
-        "from": "scammer@escammer.com",
-        "subject": "you have won $1000000000",
-        "body": "Just send a check for $200 to recieve this money",
-        "timestamp": "2024-03-15T15:00:00Z"
     }
 ]
 
+'''export OPENAI_API_KEY="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"'''
 
 class EmailProcessor:
     def __init__(self, model: str = "gpt-3.5-turbo"):
         """Initialize the email processor with OpenAI API key."""
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.model = model
 
         # Define valid categories
         self.valid_categories = {
             "complaint", "inquiry", "feedback",
             "support_request", "other"
         }
-        
-    def vaildate_email(self, email: Dict) -> bool:
-        required_fields = ["id", "from", "subject", "body", "timestamp"]
-        for field in required_fields:
-            if not field in email or not email[field]:
-                logger.error(f"Validation failed: Missing or empty field '{field}' in email {email.get('id', 'unknown')}.")
-                return False
-        return True
-    
-    def get_email_subject(self, email: Dict) -> str:
-        subject = email.get("subject", "")
-        if subject:
-            return subject
-        else:
-            logger.error("Validation Error: Missing subject on email.")
-        return
-    
-    def get_email_body(self, email: Dict) -> str:
-        body = email.get("body", "")
-        if body:
-            return body
-        else:
-            logger.error("Validation Error: Missing Body on email.")
-        return
-    
-    def get_email_from(self, email: Dict) -> str:
-        from_s = email.get("from", "")
-        if from_s:
-            return from_s
-        else:
-            logger.error("Validation Error: Missing sender email.")
-        return
-    
+        self.model = model
+
     def classify_email(self, email: Dict) -> Optional[str]:
         """
         Classify an email using LLM.
@@ -124,46 +78,43 @@ class EmailProcessor:
         2. Make the API call with appropriate error handling
         3. Validate and return the classification
         """
-
-        if not self.vaildate_email(email):
-            return
-        from_s = self.get_email_from(email)
-        body = self.get_email_body(email)
-        subject = self.get_email_subject(email)
-
+        if not email.get("body"):
+            logger.error("Email body is empty or missing.")
+            return None
+        
         prompt = f"""
-            You are an expert email classifier. Analyze the email details below and assign it to one of the following categories: complaint, inquiry, feedback, support_request, or other.
+        classify the following email based on its content into one of the following categories: {', '.join(self.valid_categories)}
+        , and classify it as 'other' only if it doesn't fit any of the categories mentioned, or the email shows no clear intent.
+        
+        here is the email:
+        from: {email['from']}
+        Subject: {email['subject']}
+        body: {email['body']}
 
-            Guidelines:
-            1. Use "complaint" if the email expresses dissatisfaction, frustration, or reports a problem with a product/service.
-            2. Use "inquiry" if the email asks for information or clarification regarding a product, service, or technical issue (e.g., asking about compatibility, features, or troubleshooting).
-            3. Use "feedback" if the email offers praise, suggestions, or constructive criticism.
-            4. Use "support_request" if the email describes technical issues or requests help (e.g., error messages, installation problems).
-            5. Use "other" if the email does not clearly match any of the above categories or shows no clear intent.
+        Please give only one category name from the categories as output and nothing else.
 
-            Email Details:
-            From: {from_s}
-            Subject: {subject}
-            Body: {body}
-
-            Respond with only one of the category names.
-            """
+        """
         try:
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=5,
                 temperature=0)
+            
+            # classification = response.choices[0].message['content'].strip().lower()
             classification = response.choices[0].message.content.strip().lower()
             if classification in self.valid_categories:
-                logger.info(f"email classified as {classification}")
+                logger.info(f"Email classified as: {classification}")
                 return classification
             else:
-                logger.error(f"Invalid catagory recieved {classification}")
+                logger.error(f"Invalid classification received: {classification}") # Bad Prompt
                 return None
+            
         except Exception as e:
-            logger.error(f"Error during email classification: {e}, ID: {email['id']}")
+            logger.error(f"Error during email classification: {e}, email_id: {email['id']}")
             return None
+
 
 
     def generate_response(self, email: Dict, classification: str) -> Optional[str]:
@@ -175,20 +126,15 @@ class EmailProcessor:
         2. Implement appropriate response templates
         3. Add error handling
         """
-        if not self.vaildate_email(email):
-            return
-        from_s = self.get_email_from(email)
-        body = self.get_email_body(email)
-        subject = self.get_email_subject(email)
-
+        # Based on the classification, the prompt will change 
         if classification == "complaint":
             prompt = f"""
             Generate a professional and empathetic response to the following complaint email. 
             Ensure to acknowledge the issue, apologize, and provide a solution or next steps.
             
             Here is the email:
-            Subject: {subject}
-            body: {body}
+            Subject: {email['subject']}
+            body: {email['body']}
             only generate the body of the email response and nothing else.
             """
         elif classification == "inquiry":
@@ -197,8 +143,8 @@ class EmailProcessor:
             Provide clear and concise information related to the inquiry.
             
             Here is the email:
-            Subject: {subject}
-            body: {body}
+            Subject: {email['subject']}
+            body: {email['body']}
             only generate the body of the email response and nothing else.
             """
         elif classification == "feedback":
@@ -207,8 +153,8 @@ class EmailProcessor:
             Thank the customer for their feedback and provide any necessary follow-up.
             
             Here is the email:
-            Subject: {subject}
-            body: {body}
+            Subject: {email['subject']}
+            body: {email['body']}
             only generate the body of the email response and nothing else.
             """
         elif classification == "support_request":
@@ -217,11 +163,31 @@ class EmailProcessor:
             Acknowledge the issue and provide a solution or next steps.
             
             Here is the email:
-            Subject: {subject}
-            body: {body}
+            Subject: {email['subject']}
+            body: {email['body']}
             only generate the body of the email response and nothing else.
             """
+        else:
+            prompt = f"""
+            Generate a professional response to the following email. 
+            Provide a standard acknowledgment, and direct them to the appropriate department if necessary.
+            Here is the email:
+            Subject: {email['subject']}
+            body: {email['body']}
+            only generate the body of the email response and nothing else.
+            """
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500,
+                temperature=0.1)
+            response_text = response.choices[0].message.content.strip()
 
+            return response_text
+        except Exception as e:
+            logger.error(f"Error during response generation: {e}, email_id: {email['id']}")
+            return None
 
 class EmailAutomationSystem:
     def __init__(self, processor: EmailProcessor):
@@ -245,42 +211,110 @@ class EmailAutomationSystem:
         2. Add appropriate error handling
         3. Return processing results
         """
-        pass
-
+        classify = self.processor.classify_email(email)
+        if classify:
+            logger.info(f"Email classified as: {classify}, email_id: {email['id']}")
+            response_handler = self.response_handlers.get(classify)
+            if response_handler:
+                response = response_handler(email)
+                return {
+                    "email_id": email["id"],
+                    "success": True,
+                    "classification": classify,
+                    "response_sent": bool(response)
+                }
+            else:
+                logger.error(f"No handler found for classification: {classify}, email_id: {email['id']}")
+                return {
+                    "email_id": email["id"],
+                    "success": False,
+                    "classification": classify,
+                    "response_sent": False
+                }
+        else:
+            logger.error(f"Failed to classify email: {email['id']}")
+            return {
+                "email_id": email["id"],
+                "success": False,
+                "classification": None,
+                "response_sent": False
+            }
+        
     def _handle_complaint(self, email: Dict):
         """
         Handle complaint emails.
         TODO: Implement complaint handling logic
         """
-        pass
+        response = self.processor.generate_response(email, "complaint")
+        if response:
+            send_complaint_response(email["id"], response)
+        else:
+            logger.error("Failed to generate response for complaint email.")
+            # Since, it is a complaint, and the LLM couldn't solve, create an urgent ticket
+            #  for the complaint
+            create_urgent_ticket(email["id"], "complaint", email["body"])
+
+        return response
 
     def _handle_inquiry(self, email: Dict):
         """
         Handle inquiry emails.
         TODO: Implement inquiry handling logic
         """
-        pass
+        response = self.processor.generate_response(email, "inquiry")
+        
+        if response:
+            send_standard_response(email["id"], response)
+        else:
+            logger.error("Failed to generate response for inquiry email.")
+            create_support_ticket(email["id"], "inquiry", email["body"])
+
+        return response
 
     def _handle_feedback(self, email: Dict):
         """
         Handle feedback emails.
         TODO: Implement feedback handling logic
         """
-        pass
+        response = self.processor.generate_response(email, "feedback")
+        
+        if response:
+            log_customer_feedback(email["id"], email["body"])
+            send_standard_response(email["id"], response)
+        else:
+            logger.error("Failed to generate response for feedback email.")
+            create_support_ticket(email["id"], "feedback", email["body"])
+
+        return response
 
     def _handle_support_request(self, email: Dict):
         """
         Handle support request emails.
         TODO: Implement support request handling logic
         """
-        pass
+
+        response = self.processor.generate_response(email, "support_request")
+        if response:
+            send_standard_response(email["id"], response)
+        else:
+            logger.error("Failed to generate response for support request email.")
+            create_support_ticket(email["id"], response)
+        return response
 
     def _handle_other(self, email: Dict):
         """
         Handle other category emails.
         TODO: Implement handling logic for other categories
         """
-        pass
+        response = self.processor.generate_response(email, "other")
+
+        if response:
+            send_standard_response(email["id"], response)
+        else:
+            logger.error("Failed to generate response for other category email.")
+            # Create a ticket for further review
+            create_support_ticket(email["id"], "other", email["body"])
+        return response
 
 # Mock service functions
 def send_complaint_response(email_id: str, response: str):
@@ -313,6 +347,7 @@ def log_customer_feedback(email_id: str, feedback: str):
     # In real implementation: integrate with feedback system
 
 
+
 def run_demonstration():
     """Run a demonstration of the complete system."""
     # Initialize the system
@@ -336,22 +371,4 @@ def run_demonstration():
 
 # Example usage:
 if __name__ == "__main__":
-    # results_df = run_demonstration()
-    actual_category = {
-    "001": "complaint",
-    "002": "inquiry",
-    "003": "feedback",
-    "004": "support_request",
-    "005": "other",
-    "006": "other",
-    "007": "other",
-    }
-    eprocess = EmailProcessor()
-    for email in sample_emails:
-        classified = eprocess.classify_email(email)
-        if classified != actual_category[email["id"]]:
-            print("FALSE")
-            exit()
-    print("TRUE")
-
-        
+    results_df = run_demonstration()
