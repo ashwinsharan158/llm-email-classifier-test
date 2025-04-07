@@ -91,16 +91,6 @@ The exercise is divided into four main parts:
   - **Decouple Response Handlers**: Instead of embedding the `_handle_**` functions within `EmailAutomationSystem`, use independent service functions. This reduces code duplication and eases scalability.
   - **Custom LLM Training**: In a production scenario, consider training a custom GPT model with internal resources and FAQ data. This could streamline the response generation by eliminating multiple conditionals in the response function.
 
-### Production Considerations
-- **Deployment**:  
-  - Package and deploy the script in a Docker container. This facilitates rapid updates, scaling, and integration with a CI/CD pipeline.
-- **Extensibility**:  
-  - The design supports future integration of additional categories or modifications to the LLM prompts without significant restructuring.
-- **Monitoring & Logging**:  
-  - Robust logging is included to help diagnose issues in production.
-- **Resilience**:  
-  - Fallback mechanisms (like creating support or urgent tickets) are in place to ensure that no email is left unaddressed even if LLM integration fails.
-
 ## Evaluation Criteria
 
 ### 1. Code Quality (25%)
